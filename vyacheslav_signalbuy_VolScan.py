@@ -6,7 +6,7 @@
 # which is a statistical measure of the dispersion of data points in a data series around the mean,
 # and is used in certain markets to ascertain the volatility of products:
 # https://www.investopedia.com/terms/c/coefficientofvariation.asp.
-#
+#ss
 # VolScan provides the option to use either signals generating method individually,
 # or combined within user defined settings.
 # Volscan will provide all the buying signals required for your bot,

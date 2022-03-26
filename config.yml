@@ -4,7 +4,7 @@ script_options:
   # Setting this to False will use REAL funds, use at your own risk
   TEST_MODE: False
   LOG_TRADES: True
-  LOG_FILE: 'trades.txt'
+  LOG_FILE: 'trades.log'
   DEBUG: True
 
   # Set this to true if you are accessing binance from within the United States of America
@@ -20,37 +20,28 @@ trading_options:
   # Total amount per trade (your base currency balance must be at least TRADE_SLOTS * TRADE_TOTAL)
   # Binance uses a minimum of 10 USDT per trade, add a bit extra to enable selling if the price drops.
   # Recommended: no less than 12 USDT. Suggested: 15 or more.
-  TRADE_TOTAL: 20
-
-  # List of trading pairs to exclude
-  # by default we're excluding the most popular fiat pairs
-  FIATS:
-    - EUR-USDT
-    - GBP-USDT
-    - JPY-USDT
-    - USD-USDT
-    - AUD-USDT
-    - DOWN
-    - UP
+  TRADE_TOTAL: 33
+  
 
   # Maximum number of trade 'slots' at any time (your USDT balance must be at least TRADE_SLOTS * TRADE_TOTAL)
-  TRADE_SLOTS: 10
+  TRADE_SLOTS: 4
 
   # the amount of time in MINUTES to calculate the difference from the current price (minimum: 1).
-  TIME_DIFFERENCE: 2
+  TIME_DIFFERENCE: 1
 
   # Number of times to check for TP/SL during each TIME_DIFFERENCE (minimum: 1).
   # Don't spam the Binance API, you will be banned (max 1200 requests per minute per IP).
-  RECHECK_INTERVAL: 8
+  RECHECK_INTERVAL: 20
 
   # the difference in % between the first and second checks for the price.
-  CHANGE_IN_PRICE: 100
+  CHANGE_IN_PRICE: 70
 
   # define in % when to sell a coin that's not making a profit.
-  STOP_LOSS: 100
+  STOP_LOSS: 60
 
+  USE_CUSTOM_LIST: True
   # define in % when to take profit on a profitable coin.
-  TAKE_PROFIT: 3
+  TAKE_PROFIT: 3.5
 
   # Use custom tickers.txt list for filtering pairs.
   CUSTOM_LIST: True
@@ -64,7 +55,7 @@ trading_options:
   # when hit TAKE_PROFIT, move TAKE_PROFIT up by TRAILING_TAKE_PROFIT percentage points
   # NOTE -SELL_ON_SIGNAL_ONLY will override USE_TRAILING_STOP_LOSS
   USE_TRAILING_STOP_LOSS: True
-  TRAILING_STOP_LOSS: .2
+  TRAILING_STOP_LOSS: 1.5
   TRAILING_TAKE_PROFIT: .1
 
   # Following are used to override SL, TP, TSL & TTP & SELL_ON_SIGNAL_ONLY in the case of a market crash
@@ -72,8 +63,8 @@ trading_options:
   # when hit SESSION_STOP_LOSS %, sell all coins and stop bot.
   # Note, SESSION_STOP_LOSS needs to be a NEGATIVE number i.e. -2
   SESSION_TPSL_OVERRIDE: False
-  SESSION_TAKE_PROFIT: 5
-  SESSION_STOP_LOSS: -2
+  SESSION_TAKE_PROFIT: 50
+  SESSION_STOP_LOSS: -20
 
   # Let a signalling module control sell of coin
   # NOTE - If USE_TRAILING_STOP_LOSS: True then this needs to be False
@@ -107,3 +98,409 @@ trading_options:
     # - scoobie_signalbuy_thesnail_v2
     
   
+  # List of trading pairs to exclude
+  # by default we're excluding the most popular fiat pairs
+  FIATS:
+    - EUR-USDT
+    - LRC-USDT
+    - GBP-USDT
+    - JPY-USDT
+    - USD-USDT
+    - AUD-USDT
+    - UNI-USDT
+    - TRX-USDT
+    - AAVE-USDT
+    - FTT-USDT
+    - CRO-USDT
+    - MKR-USDT
+    - CAKE-USDT
+    - RUNE-USDT
+    - COMP-USDT
+    - SNX-USDT
+    - CEL-USDT
+    - YFI-USDT
+    - SUSHI-USDT
+    - NEXO-USDT
+    - UMA-USDT
+    - BAKE-USDT
+    - CHSB-USDT
+    - FTM-USDT
+    - MDX-USDT
+    - CRV-USDT
+    - REN-USDT
+    - 1INCH-USDT
+    - XVS-USDT
+    - REEF-USDT
+    - REP-USDT
+    - SRM-USDT
+    - INJ-USDT
+    - GNO-USDT
+    - ALPHA-USDT
+    - KAVA-USDT
+    - FUN-USDT
+    - BAL-USDT
+    - WIN-USDT
+    - DODO-USDT
+    - HEX-USDT
+    - MIR-USDT
+    - RAY-USDT
+    - PERP-USDT
+    - XPRT-USDT
+    - ORN-USDT
+    - LINA-USDT
+    - QUICK-USDT
+    - ERC20-USDT
+    - BADGER-USDT
+    - CSC-USDT
+    - OXY-USDT
+    - MFT-USDT
+    - PNK-USDT
+    - BURGER-USDT
+    - RLY-USDT
+    - DDX-USDT
+    - TROY-USDT
+    - LOTTO-USDT
+    - FLM-USDT
+    - DIA-USDT
+    - ATRI-USDT
+    - NRV-USDT
+    - RAMP-USDT
+    - CUMMIES-USDT
+    - YFII-USDT
+    - TT-USDT
+    - RGT-USDT
+    - CREAM-USDT
+    - AKRO-USDT
+    - BOND-USDT
+    - STPT-USDT
+    - BZRX-USDT
+    - EDR-USDT
+    - BELT-USDT
+    - BIFI-USDT
+    - VSP-USDT
+    - HEGIC-USDT
+    - SFI-USDT
+    - PCX-USDT
+    - SRK-USDT
+    - TRU-USDT
+    - PAID-USDT
+    - FARM-USDT
+    - HARD-USDT
+    - FNX-USDT
+    - CONV-USDT
+    - SWTH-USDT
+    - DG-USDT
+    - RCN-USDT
+    - FOR-USDT
+    - SALT-USDT
+    - SPARTA-USDT
+    - APY-USDT
+    - AUTO-USDT
+    - MPH-USDT
+    - JULD-USDT
+    - BAO-USDT
+    - UFT-USDT
+    - MTA-USDT
+    - IDLE-USDT
+    - ICHI-USDT
+    - MEME-USDT
+    - MARK-USDT
+    - PICKLE-USDT
+    - OCTO-USDT
+    - XGOV-USDT
+    - OPIUM-USDT
+    - PTF-USDT
+    - EASY-USDT
+    - HGET-USDT
+    - XED-USDT
+    - DOUGH-USDT
+    - SWRV-USDT
+    - POLK-USDT
+    - LTX-USDT
+    - WGR-USDT
+    - YAXIS-USDT
+    - MOON-USDT
+    - HAKKA-USDT
+    - PPAY-USDT
+    - PKF-USDT
+    - CBC-USDT
+    - SHROOM-USDT
+    - DOS-USDT
+    - WHITE-USDT
+    - MBOX-USDT
+    - DAFI-USDT
+    - BMXX-USDT
+    - VNLA-USDT
+    - EGG-USDT
+    - WATCH-USDT
+    - LQTY-USDT
+    - MAHA-USDT
+    - PROS-USDT
+    - YFL-USDT
+    - ROOK-USDT
+    - ALPACA-USDT
+    - MATTER-USDT
+    - AUC-USDT
+    - ROOM-USDT
+    - DGTX-USDT
+    - CHP-USDT
+    - CNTR-USDT
+    - PLAY-USDT
+    - YF-DAI-USDT
+    - GSWAP-USDT
+    - DOWS-USDT
+    - BAC-USDT
+    - BREW-USDT
+    - FAIR-USDT
+    - DERI-USDT
+    - DRC-USDT
+    - TRTT-USDT
+    - LUA-USDT
+    - DOKI-USDT
+    - NORD-USDT
+    - LET-USDT
+    - PLOT-USDT
+    - GRO-USDT
+    - SNOW-USDT
+    - POT-USDT
+    - ETNA-USDT
+    - FIN-USDT
+    - AZUKI-USDT
+    - SMARTCREDIT-USDT
+    - HYPR-USDT
+    - THC-USDT
+    - MGO-USDT
+    - FOC-USDT
+    - LBA-USDT
+    - STA-USDT
+    - OPEN-USDT
+    - TKS-USDT
+    - JRT-USDT
+    - DFSOCIAL-USDT
+    - CNS-USDT
+    - ETHA-USDT
+    - WINR-USDT
+    - SMTY-USDT
+    - NBOT-USDT
+    - GAP-USDT
+    - TFL-USDT
+    - WNL-USDT
+    - WARP-USDT
+    - 1X2-USDT
+    - CANN-USDT
+    - OPT-USDT
+    - YFIII-USDT
+    - LND-USDT
+    - XAMP-USDT
+    - CCAKE-USDT
+    - FTX-USDT
+    - NDR-USDT
+    - TOTM-USDT
+    - BOOST-USDT
+    - COIN-USDT
+    - PPBLZ-USDT
+    - TRST-USDT
+    - DCNTR-USDT
+    - PIPT-USDT
+    - KIMCHI-USDT
+    - STX-USDT
+    - EDG-USDT
+    - DPY-USDT
+    - ROT-USDT
+    - BET-USDT
+    - DOGES-USDT
+    - DOPE-USDT
+    - YVS-USDT
+    - XBP-USDT
+    - KP4R-USDT
+    - ALLOY-USDT
+    - ESBC-USDT
+    - SENC-USDT
+    - STBZ-USDT
+    - TDP-USDT
+    - BCPT-USDT
+    - 1MT-USDT
+    - VSL-USDT
+    - RULER-USDT
+    - GCC-USDT
+    - DBET-USDT
+    - BGTT-USDT
+    - MODX-USDT
+    - FLOT-USDT
+    - SCB-USDT
+    - ORE-USDT
+    - LST-USDT
+    - TGAME-USDT
+    - SYN-USDT
+    - BTAD-USDT
+    - PLAT-USDT
+    - DFS-USDT
+    - ACE-USDT
+    - MCC-USDT
+    - SUR-USDT
+    - ONX-USDT
+    - ULG-USDT
+    - CNNC-USDT
+    - FILDA-USDT
+    - ERSDL-USDT
+    - VALUE-USDT
+    - PERI-USDT
+    - LIEN-USDT
+    - DUCK-USDT
+    - MCB-USDT
+    - KOBE-USDT
+    - ALCX-USDT
+    - DEA-USDT
+    - FST-USDT
+    - GDT-USDT
+    - BSCX-USDT
+    - TCP-USDT
+    - FLX-USDT
+    - GOVI-USDT
+    - BANANA-USDT
+    - SI-USDT
+    - PROS-USDT
+    - DINO-USDT
+    - ICE-USDT
+    - XTX-USDT
+    - MOONPIRATE-USDT
+    - INV-USDT
+    - EDDA-USDT
+    - DIS-USDT
+    - PREMIA-USDT
+    - BAS-USDT
+    - ALPA-USDT
+    - PIE-USDT
+    - YAM-USDT
+    - COFI-USDT
+    - YELD-USDT
+    - RAMEN-USDT
+    - FVT-USDT
+    - BDO-USDT
+    - MEL-USDT
+    - ETGF-USDT
+    - YAMV2-USDT
+    - NGM-USDT
+    - REFI-USDT
+    - SHARD-USDT
+    - ONES-USDT
+    - 1ST-USDT
+    - SASHIMI-USDT
+    - BSD-USDT
+    - BUILD-USDT
+    - SBDO-USDT
+    - CHS-USDT
+    - BSDS-USDT
+    - DND-USDT
+    - KBTC-USDT
+    - 420X-USDT
+    - GYSR-USDT
+    - BNSD-USDT
+    - USDP-USDT
+    - PASTA-USDT
+    - MIS-USDT
+    - METRIC-USDT
+    - GGC-USDT
+    - FROG-USDT
+    - STACY-USDT
+    - WAF-USDT
+    - BTA-USDT
+    - R3FI-USDT
+    - MOCHI-USDT
+    - LKK-USDT
+    - DFT-USDT
+    - NLC2-USDT
+    - BET-USDT
+    - BXK-USDT
+    - DEFLCT-USDT
+    - ABS-USDT
+    - RUPEE-USDT
+    - DEBASE-USDT
+    - SWAG-USDT
+    - SISHI-USDT
+    - WHEAT-USDT
+    - NYAN-USDT
+    - PLA-USDT
+    - SWSH-USDT
+    - MCRN-USDT
+    - FFYI-USDT
+    - SMOKE-USDT
+    - DICE-USDT
+    - YFFI-USDT
+    - BST-USDT
+    - CBET-USDT
+    - 888-USDT
+    - PLAY-USDT
+    - SCC-USDT
+    - DICE-USDT
+    - LIVE-USDT
+    - COL-USDT
+    - ZOM-USDT
+    - $BASED-USDT
+    - KUN-USDT
+    - WTF-USDT
+    - IYF-USDT
+    - MEGA-USDT
+    - GRAIN-USDT
+    - AGVE-USDT
+    - WAULTX-USDT
+    - YPLT-USDT
+    - DAIQ-USDT
+    - U8D-USDT
+    - CORD-USDT
+    - KLON-USDT
+    - METH-USDT
+    - SNOB-USDT
+    - ANUBI-USDT
+    - ANY-USDT
+    - ARCX-USDT
+    - BETHER-USDT
+    - BUNNY-USDT
+    - BUNNY-USDT
+    - CBEX-USDT
+    - CRYPL-USDT
+    - CSCJ-USDT
+    - CSNO-USDT
+    - DELTA-USDT
+    - DET-USDT
+    - ELE-USDT
+    - EPM-USDT
+    - FISH-USDT
+    - GARUDA-USDT
+    - GUESS-USDT
+    - HONK-USDT
+    - HORSE-USDT
+    - LEV-USDT
+    - LST-USDT
+    - OIL-USDT
+    - PANTHER-USDT
+    - PHY-USDT
+    - PND-USDT
+    - ROBET-USDT
+    - SBET-USDT
+    - SHP-USDT
+    - SHRIMP-USDT
+    - SPC-USDT
+    - SPUNGE-USDT
+    - SPX-USDT
+    - SXC-USDT
+    - TALK-USDT
+    - TIT-USDT
+    - UKG-USDT
+    - UNIFARM-USDT
+    - WAD-USDT
+    - WISH-USDT
+    - XBL-USDT
+    - BAZ-USDT
+    - CNP-USDT
+    - EGOLD-USDT
+    - EVO-USDT
+    - KYAN-USDT
+    - LBET-USDT
+    - PVP-USDT
+    - QCSS-USDT
+    - SBX-USDT
+    - TOPIA-USDT
+    - XGOV-USDT
+    - DOWN
+    - UP

@@ -109,9 +109,10 @@ CREATE_TICKER_LIST = True
 # ticker_type = 'innovation-zone'
 ticker_type = 'all'
 if CREATE_TICKER_LIST:
-	TICKERS_LIST = 'tickers_all_USDT.txt'
+	#LLLLL# TICKERS_LIST = 'tickers_all_USDT.txt'
+	TICKERS_LIST = 'tickers.txt'
 else:
-	TICKERS_LIST = 'tickers_all_USDT.txt'
+	ICKERS_LIST = 'tickers.txt'
 
 # System Settings
 BVT = False
@@ -122,20 +123,20 @@ else:
 	signal_file_type = '.exs'
 
 # if using Windows OS set to True, else set to False
-WINDOWS = True
+WINDOWS = False
 # send message to discord
-DISCORD = True
+DISCORD = False
 
 # Strategy Settings
 LIMIT = 4
 INTERVAL = '1day'
-profit_min = 15
+profit_min = 8
 profit_max = 100  # only required if you want to limit max profit
-percent_below = 0.7  # change risk level:  0.7 = 70% below high_price, 0.5 = 50% below high_price
+percent_below = 0.5  # change risk level:  0.7 = 70% below high_price, 0.5 = 50% below high_price
 MOVEMENT = True
 
 # Display Setttings
-all_info = False
+all_info = True
 
 
 class TextColors:

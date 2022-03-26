@@ -83,11 +83,11 @@ CREATE_TICKER_LIST = False
 # ticker_type = 'innovation-zone'
 ticker_type = 'all'
 if CREATE_TICKER_LIST:
-    TICKERS_LIST = 'tickers_all_USDT.txt'
+    TICKERS_LIST = 'tickers_halal.txt'
 else:
     TICKERS_LIST = 'tickers.txt'
 
-LIMIT = 7
+LIMIT = 8
 INTERVAL = '1day'
 
 BVT = False
@@ -97,11 +97,11 @@ if BVT:
 else:
     signal_file_type = '.buy'
 
-profit_min = 13
+profit_min = 7
 profit_max = 100
 # change risk level:  0.7 = 70% below high_price, 0.5 = 50% below high_price
-percent_below = 0.7
-all_info = False
+percent_below = 0.4
+all_info = True
 # not available yet
 # extra_filter = False
 
