@@ -87,7 +87,7 @@ if CREATE_TICKER_LIST:
 else:
     TICKERS_LIST = 'tickers.txt'
 
-LIMIT = 8
+LIMIT = 2
 INTERVAL = '1day'
 
 BVT = False
@@ -97,10 +97,10 @@ if BVT:
 else:
     signal_file_type = '.buy'
 
-profit_min = 7
+profit_min = 3
 profit_max = 100
 # change risk level:  0.7 = 70% below high_price, 0.5 = 50% below high_price
-percent_below = 0.4
+percent_below = 0.25
 all_info = True
 # not available yet
 # extra_filter = False

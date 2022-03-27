@@ -20,11 +20,11 @@ trading_options:
   # Total amount per trade (your base currency balance must be at least TRADE_SLOTS * TRADE_TOTAL)
   # Binance uses a minimum of 10 USDT per trade, add a bit extra to enable selling if the price drops.
   # Recommended: no less than 12 USDT. Suggested: 15 or more.
-  TRADE_TOTAL: 33
+  TRADE_TOTAL: 21
   
 
   # Maximum number of trade 'slots' at any time (your USDT balance must be at least TRADE_SLOTS * TRADE_TOTAL)
-  TRADE_SLOTS: 4
+  TRADE_SLOTS: 6
 
   # the amount of time in MINUTES to calculate the difference from the current price (minimum: 1).
   TIME_DIFFERENCE: 1
@@ -34,14 +34,14 @@ trading_options:
   RECHECK_INTERVAL: 20
 
   # the difference in % between the first and second checks for the price.
-  CHANGE_IN_PRICE: 70
+  CHANGE_IN_PRICE: 15
 
   # define in % when to sell a coin that's not making a profit.
   STOP_LOSS: 60
 
   USE_CUSTOM_LIST: True
   # define in % when to take profit on a profitable coin.
-  TAKE_PROFIT: 3.5
+  TAKE_PROFIT: 3
 
   # Use custom tickers.txt list for filtering pairs.
   CUSTOM_LIST: True
@@ -55,7 +55,7 @@ trading_options:
   # when hit TAKE_PROFIT, move TAKE_PROFIT up by TRAILING_TAKE_PROFIT percentage points
   # NOTE -SELL_ON_SIGNAL_ONLY will override USE_TRAILING_STOP_LOSS
   USE_TRAILING_STOP_LOSS: True
-  TRAILING_STOP_LOSS: 1.5
+  TRAILING_STOP_LOSS: 1
   TRAILING_TAKE_PROFIT: .1
 
   # Following are used to override SL, TP, TSL & TTP & SELL_ON_SIGNAL_ONLY in the case of a market crash
@@ -94,8 +94,8 @@ trading_options:
     # - os_signalsell_RECOMM
     # - os_signalbuy_3SMAv2
     # - os_pausebot_MAv2
-    - scoobie_signalbuy_thesnail
-    # - scoobie_signalbuy_thesnail_v2
+    # - scoobie_signalbuy_thesnail
+    - scoobie_signalbuy_thesnail_v2
     
   
   # List of trading pairs to exclude
