@@ -1,19 +1,23 @@
 
 
 # Strategy Settings
-LIMIT = 4
-INTERVAL = '1day'
-profit_min = 15
+LIMIT = 6
+INTERVAL = '1hour'
+profit_min = 1
 profit_max = 100  # only required if you want to limit max profit
 percent_below = 0.7  # change risk level:  0.7 = 70% below high_price, 0.5 = 50% below high_price
-MOVEMENT = True
-
+MOVEMENT = False
+sleepunit = 15
 # Display Setttings
 all_info = True
 # if using Windows OS set to True, else set to False
 WINDOWS = False
 # send message to discord
 DISCORD = False
+
+def MyLog(msg):
+    print(f'{TextColors.TURQUOISE}=================>  '+str(msg)+f'  <========================{TextColors.DEFAULT}')
+
 """
 The Snail v 2
 "Buy the dips! ... then wait"
@@ -109,6 +113,7 @@ EX_PAIRS = parsed_config['trading_options']['FIATS']
 TEST_MODE = parsed_config['script_options']['TEST_MODE']
 TAKE_PROFIT = parsed_config['trading_options']['TAKE_PROFIT']
 DISCORD_WEBHOOK = load_discord_creds(parsed_creds)
+EXCHANGE_PLATFORM = parsed_config['script_options']['EXCHANGE']
 
 # Load creds for correct environment
 access_key, secret_key, passphrase_key = load_correct_creds(parsed_creds)
@@ -128,7 +133,7 @@ if CREATE_TICKER_LIST:
     #LLLLL# TICKERS_LIST = 'tickers_all_USDT.txt'
     TICKERS_LIST = 'tickers_halal.txt'
 else:
-    ICKERS_LIST = 'tickers.txt'
+    TICKERS_LIST = 'tickers.txt'
 
 # System Settings
 BVT = False
@@ -155,9 +160,7 @@ class TextColors:
 
 
 def msg_discord(msg):
-
     message = msg + '\n\n'
-
     mUrl = "https://discordapp.com/api/webhooks/"+DISCORD_WEBHOOK
     data = {"content": message}
     response = requests.post(mUrl, json=data)
@@ -167,7 +170,6 @@ def get_price(client_api):
     initial_price = {}
     tickers = [line.strip() for line in open(TICKERS_LIST)]
     prices = client_api.get_ticker()
-
     for coin in prices['ticker']:
         for item in tickers:
             if item + PAIR_WITH == coin['symbol'] and all(item + PAIR_WITH not in coin['symbol'] for item in EX_PAIRS):
@@ -180,13 +182,25 @@ def get_price(client_api):
     return initial_price
 
 
+
 async def create_urls(ticker_list, interval) -> dict:
     coins_urls = {}
 
-    if INTERVAL == '1day':
-            st = datetime.now() - timedelta(days=float(LIMIT))
-            
+    if (INTERVAL == '1day') or (INTERVAL == '1d'):
+        st = datetime.now() - timedelta(days=float(LIMIT))
+    elif INTERVAL == '4hour':
+        st = datetime.now() - timedelta(hours=float(LIMIT*4))    
+    elif INTERVAL == '1hour':
+        st = datetime.now() - timedelta(hours=float(LIMIT))  
+    elif INTERVAL == '1min':
+        st = datetime.now() - timedelta(minutes=float(LIMIT*1))  
+    elif INTERVAL == '5min':
+        st = datetime.now() - timedelta(minutes=float(LIMIT*5))  
+    elif INTERVAL == '15min':
+        st = datetime.now() - timedelta(minutes=float(LIMIT*15))  
+        
     et = datetime.now()
+    
     start_time = int(st.timestamp())
     stop_time = int(et.timestamp())
 
@@ -199,7 +213,34 @@ async def create_urls(ticker_list, interval) -> dict:
         else:
             coins_urls[coin] = {'symbol': coin,
                                 'url': f"https://api.kucoin.com/api/v1/market/candles?symbol={coin}&type={interval}&startAt={start_time}&endAt={stop_time}"}
+    return coins_urls
 
+async def create_urls2(ticker_list, interval) -> dict:
+    coins_urls = {}
+    if INTERVAL == '1day':
+        st = datetime.now() - timedelta(days=float(LIMIT))
+    elif INTERVAL == '4hour':
+        st = datetime.now() - timedelta(hours=float(LIMIT/4))    
+    elif INTERVAL == '1hour':
+        st = datetime.now() - timedelta(hours=float(LIMIT))  
+    elif INTERVAL == '1min':
+        st = datetime.now() - timedelta(minuts=float(LIMIT/1))  
+    elif INTERVAL == '5min':
+        st = datetime.now() - timedelta(minuts=float(LIMIT/5))  
+    elif INTERVAL == '15min':
+        st = datetime.now() - timedelta(minuts=float(LIMIT/15))  
+    et = datetime.now()
+    start_time = int(st.timestamp())
+    stop_time = int(et.timestamp())
+    for coin in ticker_list:
+        if type(coin) == dict:
+            if all(item + PAIR_WITH not in coin['symbol'] for item in EX_PAIRS):
+                coins_urls[coin['symbol']] = {'symbol': coin['symbol'],
+                                              'url': f"https://api.kucoin.com/api/v1/market/candles?symbol"
+                                                     f"{coin['symbol']}&type={interval}&startAt={start_time}&endAt={stop_time}"}
+        else:
+            coins_urls[coin] = {'symbol': coin,
+                                'url': f"https://api.kucoin.com/api/v1/market/candles?symbol={coin}&type={interval}&startAt={start_time}&endAt={stop_time}"}
     return coins_urls
 
 
@@ -232,9 +273,9 @@ async def get_historical_data(ticker_list, interval):
 def get_prices_high_low(list_coins, interval):
     if WINDOWS:
         asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
-    
     prices_low_high = {}
     hist_data = asyncio.run(get_historical_data(ticker_list=list_coins, interval=interval))
+    time.sleep(1)
     for item in hist_data:
         coin_symbol = item['symbol']
         h_p = []
@@ -251,168 +292,193 @@ def get_prices_high_low(list_coins, interval):
                 h_p.append(high_price)
                 l_p.append(low_price)
         except Exception as e:
-                    print(f'Exception {e}')
-                    continue
-
+                print(f'Exception {e}')
+                print("=======> Remove this Simbol: "+ str(coin_symbol)+"  <==========")
+                continue
         prices_low_high[coin_symbol] = {'symbol': coin_symbol, 'high_price': h_p, 'low_price': l_p, 'current_potential': 0.0}
-
     return prices_low_high
 
 
 def do_work():    	
     while True:
         print("+++++++++++++++++++++++   Scoobie_thesnail V2 Working   +++++++++++++++")
-        init_price = get_price(client)
-        coins = get_prices_high_low(init_price, INTERVAL)
-        print(f'{TextColors.TURQUOISE}The Snail is checking for potential profit and buy signals{TextColors.DEFAULT}')
-        if os.path.exists(f'signals/snail_scan{signal_file_type}'):
-            os.remove(f'signals/snail_scan{signal_file_type}')
+        try:
+            init_price = get_price(client)
+            coins = get_prices_high_low(init_price, INTERVAL)
+            print(f'{TextColors.TURQUOISE}The Snail is checking for potential profit and buy signals{TextColors.DEFAULT}')
+            if os.path.exists(f'signals/snail_scan{signal_file_type}'):
+                os.remove(f'signals/snail_scan{signal_file_type}')
 
-        current_potential_list = []
-        held_coins_list = {}
+            current_potential_list = []
+            held_coins_list = {}
 
-        if TEST_MODE:
-            coin_path = 'test_coins_bought.json'
-        elif BVT:
-            coin_path = 'coins_bought.json'
-        else:
-            coin_path = 'live_coins_bought.json'
-        if os.path.isfile(coin_path) and os.stat(coin_path).st_size != 0:
-            with open(coin_path) as file:
-                held_coins_list = json.load(file)
+            if TEST_MODE:
+                coin_path = 'test_coins_bought.json'
+            elif BVT:
+                coin_path = 'coins_bought.json'
+            else:
+                MyLog("No BVT")
+                coin_path = 'live_coins_bought.json'
+            if os.path.isfile(coin_path) and os.stat(coin_path).st_size != 0:
+                with open(coin_path) as file:
+                    held_coins_list = json.load(file)
 
-        for coin in coins:
-            if len(coins[coin]['high_price']) == LIMIT:
-                high_price = float(max(coins[coin]['high_price']))
-                low_price = float(min(coins[coin]['low_price']))
-                last_price = float(init_price[coin + PAIR_WITH]['price'])
-
-                # Calculation
-                range = high_price - low_price
-                potential = (low_price / high_price) * 100
-                buy_above = low_price * 1.00
-                buy_below = high_price - (range * percent_below)  # percent below affects Risk
-                max_potential = potential * 0.98
-                min_potential = potential * 0.6
-                safe_potential = potential - 12
-                current_range = high_price - last_price
-                current_potential = ((high_price / last_price) * 100) - 100
-                coins[coin]['current_potential'] = current_potential
-                movement = (low_price / range)
-#				print(f'{coin} {potential:.2f}% {movement:.2f}%')
-
-                if MOVEMENT:
-                    if profit_min < current_potential < profit_max and last_price < buy_below and movement >= TAKE_PROFIT and coin not in held_coins_list:
-                        current_potential_list.append(coins[coin])
-                else:
-                    if profit_min < current_potential < profit_max and last_price < buy_below and coin not in held_coins_list:
-                        current_potential_list.append(coins[coin])
-
-        if current_potential_list:
-            # print(current_potential_list)
-            # exchange = ccxt.binance()
-            exchange = ccxt.kucoin()
-            macd_list = []
-
-            for i in current_potential_list:
-                coin = i['symbol'] + PAIR_WITH
-                # coin = i['symbol'] + "-" + PAIR_WITH
-                current_potential = i['current_potential']
-                macd1 = exchange.fetch_ohlcv(coin, timeframe='1m', limit=36)
-                macd5 = exchange.fetch_ohlcv(coin, timeframe='5m', limit=36)
-                macd15 = exchange.fetch_ohlcv(coin, timeframe='15m', limit=36)
-                try:
-                    macd1day = exchange.fetch_ohlcv(coin, timeframe='1d', limit=36)
-                except Exception as e:
-                    print(f'{coin} Exception {e}')
-                    continue
-                macdbtc = exchange.fetch_ohlcv('BTCUSDT', timeframe='1m', limit=36)
-
-                df1 = pd.DataFrame(macd1, columns=['time', 'open', 'high', 'low', 'close', 'volume'])
-                df5 = pd.DataFrame(macd5, columns=['time', 'open', 'high', 'low', 'close', 'volume'])
-                df15 = pd.DataFrame(macd15, columns=['time', 'open', 'high', 'low', 'close', 'volume'])
-                df1day = pd.DataFrame(macd1day, columns=['time', 'open', 'high', 'low', 'close', 'volume'])
-                dfbtc = pd.DataFrame(macdbtc, columns=['time', 'open', 'high', 'low', 'close', 'volume'])
-
-                # Wait for 1 sec to prevent kucoin query limit
-                time.sleep(1)
-
-                try:
-                    macd1 = df1.ta.macd(fast=12, slow=26)
-                    macd5 = df5.ta.macd(fast=12, slow=26)
-                    macd15 = df15.ta.macd(fast=12, slow=26)
-                    macd1day = df1day.ta.macd(fast=12, slow=26)
-                    macdbtc = dfbtc.ta.macd(fast=12, slow=26)
-
-                    get_hist1 = macd1.iloc[35, 1]
-                    get_hist5 = macd5.iloc[35, 1]
-                    get_hist15 = macd15.iloc[35, 1]				
-                    get_hist1day = macd1day.iloc[35, 1]
-                    get_histbtc = macdbtc.iloc[35, 1]
-                
-                except Exception as e:
-                    print(f'{coin} Exception {e}')
-                    continue
-
-                if all_info:
-                    if get_hist1 >= 0 and get_hist5 >= 0 and get_hist15 >= 0 and get_hist1day >= 0 and get_histbtc >= 0:
-                        print(f'MACD HIST {coin} {current_potential:2f}% {TextColors.SELL_PROFIT}{get_hist1} {get_hist5} {get_hist15} {get_hist1day} {get_histbtc}{TextColors.DEFAULT}')
-                    else:
-                        print(f'MACD HIST {coin} {current_potential:2f}% {get_hist1} {get_hist5} {get_hist15} {get_hist1day} {get_histbtc}')
-
-                if get_hist1 >= 0 and get_hist5 >= 0 and get_hist15 >= 0 and get_hist1day >= 0 and get_histbtc >= 0:
-                    # Add to coins for Snail to scan
-                    print(f'{TextColors.TURQUOISE}{coin}{TextColors.DEFAULT} Potential profit: {TextColors.TURQUOISE}{current_potential:.0f}%{TextColors.DEFAULT}\n')
-                    macd_list.append(coins[coin])
-                # else:
-                #     print(f'Do NOT buy {coin}')
-
-            if macd_list:
-
-                # print(macd_list)
-                sort_list = sorted(macd_list, key=lambda x: x[f'current_potential'], reverse=True)
-                for i in sort_list:
-                    coin = i['symbol']
-                    current_potential = i['current_potential']
-                    last_price = float(init_price[coin + PAIR_WITH]['price'])
-                    # print(f'list {coin} {last_price}')
+            for coin in coins:
+                if len(coins[coin]['high_price']) == LIMIT:
                     high_price = float(max(coins[coin]['high_price']))
-                    # print(f'list {coin} {high_price}')
                     low_price = float(min(coins[coin]['low_price']))
-                    # print(f'list {coin} {low_price}')
+                    last_price = float(init_price[coin + PAIR_WITH]['price'])
+
+                    # Calculation
                     range = high_price - low_price
                     potential = (low_price / high_price) * 100
                     buy_above = low_price * 1.00
-                    buy_below = high_price - (range * percent_below)
+                    buy_below = high_price - (range * percent_below)  # percent below affects Risk
+                    max_potential = potential * 0.98
+                    min_potential = potential * 0.6
+                    safe_potential = potential - 12
                     current_range = high_price - last_price
+                    current_potential = ((high_price / last_price) * 100) - 100
+                    coins[coin]['current_potential'] = current_potential
+                    movement = (low_price / range)
+    #				print(f'{coin} {potential:.2f}% {movement:.2f}%')
+
+                    if MOVEMENT:
+                        MyLog("Test Mouvment")
+                        if profit_min < current_potential < profit_max and last_price < buy_below and movement >= TAKE_PROFIT and coin not in held_coins_list:
+                            current_potential_list.append(coins[coin])
+                    else:
+                        if profit_min < current_potential < profit_max and last_price < buy_below and coin not in held_coins_list:
+                            current_potential_list.append(coins[coin])
+
+            if current_potential_list:
+                print(current_potential_list)
+                # exchange = ccxt.binance()
+                exchange = ccxt.kucoin({
+                    'enableRateLimit': True,
+                    'apiKey': access_key,
+                    'secret': secret_key,
+                    'password': passphrase_key
+                })
+                macd_list = []
+
+                for i in current_potential_list:
+                    coin = i['symbol'] + PAIR_WITH
+                    if (coin.find("-")<=-1) and (EXCHANGE_PLATFORM=="kucoin"):
+                        print("Coin Symbol correction from: "+str(coin))
+                        coin = i['symbol'] + "-" + PAIR_WITH
+                        print("To: "+str(coin))
+                    current_potential = i['current_potential']
+                    macd1 = exchange.fetch_ohlcv(coin, timeframe='1m', limit=36)
+                    time.sleep(0.1)
+                    macd5 = exchange.fetch_ohlcv(coin, timeframe='5m', limit=36)
+                    time.sleep(0.1)
+                    macd15 = exchange.fetch_ohlcv(coin, timeframe='15m', limit=36)
+                    time.sleep(0.1)
+                    try:
+                        macd1day = exchange.fetch_ohlcv(coin, timeframe='1d', limit=15)
+                    except Exception as e:
+                        print(f'{coin} Exception {e}')
+                        continue
+                    if (EXCHANGE_PLATFORM=="kucoin"):
+                        macdbtc = exchange.fetch_ohlcv('BTC-USDT', timeframe='1m', limit=36)
+                    else:
+                        macdbtc = exchange.fetch_ohlcv('BTCUSDT', timeframe='1m', limit=36)
+
+                    df1 = pd.DataFrame(macd1, columns=['time', 'open', 'high', 'low', 'close', 'volume'])
+                    df5 = pd.DataFrame(macd5, columns=['time', 'open', 'high', 'low', 'close', 'volume'])
+                    df15 = pd.DataFrame(macd15, columns=['time', 'open', 'high', 'low', 'close', 'volume'])
+                    df1day = pd.DataFrame(macd1day, columns=['time', 'open', 'high', 'low', 'close', 'volume'])
+                    dfbtc = pd.DataFrame(macdbtc, columns=['time', 'open', 'high', 'low', 'close', 'volume'])
+
+                    # Wait for 1 sec to prevent kucoin query limit
+                    time.sleep(5)
+
+                    try:
+                        macd1 = df1.ta.macd(fast=12, slow=26)
+                        macd5 = df5.ta.macd(fast=12, slow=26)
+                        macd15 = df15.ta.macd(fast=12, slow=26)
+                        macd1day = df1day.ta.macd(fast=12, slow=26)
+                        macdbtc = dfbtc.ta.macd(fast=12, slow=26)
+
+                        get_hist1 = macd1.iloc[35, 1]
+                        get_hist5 = macd5.iloc[35, 1]
+                        get_hist15 = macd15.iloc[35, 1]				
+                        get_hist1day = macd1day.iloc[35, 1]
+                        get_histbtc = macdbtc.iloc[35, 1]
+                    
+                    except Exception as e:
+                        print(f'{coin} Exception {e}')
+                        continue
 
                     if all_info:
-                        print(f'\nPrice:            ${last_price:.3f}\n'
-                            f'High:             ${high_price:.3f}\n'
-                            # f'Plan: TP {TP}% TTP {TTP}%\n'
-                            f'Day Max Range:    ${range:.3f}\n'
-                            f'Current Range:    ${current_range:.3f} \n'
-                            # f'Daily Range:      ${range:.3f}\n'
-                            # f'Current Range     ${current_range:.3f} \n'
-                            # f'Potential profit before safety: {potential:.0f}%\n'
-                            # f'Buy above:        ${buy_above:.3f}\n'
-                            f'Buy Below:        ${buy_below:.3f}\n'
-                            f'Potential profit: {TextColors.TURQUOISE}{current_potential:.0f}%{TextColors.DEFAULT}'
-                            # f'Max Profit {max_potential:.2f}%\n'
-                            # f'Min Profit {min_potential:.2f}%\n'
-                            )
-                    # print(f'Adding {TextColors.TURQUOISE}{coin}{TextColors.DEFAULT} to buy list')
+                        if get_hist1 >= 0 and get_hist5 >= 0 and get_hist15 >= 0 and get_hist1day >= 0 and get_histbtc >= 0:
+                            print(f'MACD HIST {coin} {current_potential:2f}% {TextColors.SELL_PROFIT}{get_hist1} {get_hist5} {get_hist15} {get_hist1day} {get_histbtc}{TextColors.DEFAULT}')
+                        else:
+                            print(f'MACD HIST {coin} {current_potential:2f}% {get_hist1} {get_hist5} {get_hist15} {get_hist1day} {get_histbtc}')
 
-                    # add to signal
-                    with open(f'signals/snail_scan{signal_file_type}', 'a+') as f:
-                        f.write(str(coin + PAIR_WITH) + '\n')
+                    if get_hist1 >= 0 and get_hist5 >= 0 and get_hist15 >= 0 and get_hist1day >= 0 and get_histbtc >= 0:
+                        # Add to coins for Snail to scan
+                        print(f'{TextColors.TURQUOISE}{coin}{TextColors.DEFAULT} Potential profit: {TextColors.TURQUOISE}{current_potential:.0f}%{TextColors.DEFAULT}\n')
+                        macd_list.append(coins[coin])
+                    # else:
+                    #     print(f'Do NOT buy {coin}')
 
-            # else:
-            # print(f'{TextColors.TURQUOISE}{coin}{TextColors.DEFAULT} may not be profitable at this time')
-            snail_coins = len(current_potential_list)
-            macd_coins = len(macd_list)
-            snail_discord = f'Snail found {snail_coins} coins and MACD approved {macd_coins}'
-            if DISCORD:
-                msg_discord(snail_discord)
-            print(f'{TextColors.TURQUOISE}Snail found {snail_coins} coins and MACD approved {macd_coins} coins. L: {LIMIT}days Min: {profit_min}% Risk: {percent_below * 100}% {TextColors.DEFAULT}')
-            time.sleep(180)
+                if macd_list:
+                    MyLog(macd_list)
+                    # print(macd_list)
+                    sort_list = sorted(macd_list, key=lambda x: x[f'current_potential'], reverse=True)
+                    for i in sort_list:
+                        coin = i['symbol']
+                        current_potential = i['current_potential']
+                        last_price = float(init_price[coin + PAIR_WITH]['price'])
+                        # print(f'list {coin} {last_price}')
+                        high_price = float(max(coins[coin]['high_price']))
+                        # print(f'list {coin} {high_price}')
+                        low_price = float(min(coins[coin]['low_price']))
+                        # print(f'list {coin} {low_price}')
+                        range = high_price - low_price
+                        potential = (low_price / high_price) * 100
+                        buy_above = low_price * 1.00
+                        buy_below = high_price - (range * percent_below)
+                        current_range = high_price - last_price
+
+                        if all_info:
+                            print(f'\nPrice:            ${last_price:.3f}\n'
+                                f'High:             ${high_price:.3f}\n'
+                                # f'Plan: TP {TP}% TTP {TTP}%\n'
+                                f'Day Max Range:    ${range:.3f}\n'
+                                f'Current Range:    ${current_range:.3f} \n'
+                                # f'Daily Range:      ${range:.3f}\n'
+                                # f'Current Range     ${current_range:.3f} \n'
+                                # f'Potential profit before safety: {potential:.0f}%\n'
+                                # f'Buy above:        ${buy_above:.3f}\n'
+                                f'Buy Below:        ${buy_below:.3f}\n'
+                                f'Potential profit: {TextColors.TURQUOISE}{current_potential:.0f}%{TextColors.DEFAULT}'
+                                # f'Max Profit {max_potential:.2f}%\n'
+                                # f'Min Profit {min_potential:.2f}%\n'
+                                )
+                        # print(f'Adding {TextColors.TURQUOISE}{coin}{TextColors.DEFAULT} to buy list')
+
+                        # add to signal
+                        with open(f'signals/snail_scan{signal_file_type}', 'a+') as f:
+                            f.write(str(coin + PAIR_WITH) + '\n')
+
+                # else:
+                # print(f'{TextColors.TURQUOISE}{coin}{TextColors.DEFAULT} may not be profitable at this time')
+                snail_coins = len(current_potential_list)
+                macd_coins = len(macd_list)
+                snail_discord = f'Snail found {snail_coins} coins and MACD approved {macd_coins}'
+                if DISCORD:
+                    msg_discord(snail_discord)
+                print(f'{TextColors.TURQUOISE}Snail found {snail_coins} coins and MACD approved {macd_coins} coins. L: {LIMIT}days Min: {profit_min}% Risk: {percent_below * 100}% {TextColors.DEFAULT}')
+        except Exception as e:
+            print(f'xxxxxxxxxxxxxxx The Snail: Exception do_work() 1: {e}')
+            time.sleep(sleepunit*4)
+            continue
+        except KeyboardInterrupt as ki:
+            print(f'xxxxxxxxxxxxxxx The Snail: KeyboardInterrupt do_work() 1: {ki}')
+            continue
+        time.sleep(sleepunit)
+        MyLog("DoWork Sleep"+str(sleepunit))
+        print(" ---- End Snail V2 ----")

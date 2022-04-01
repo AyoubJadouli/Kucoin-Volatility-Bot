@@ -3,3 +3,11 @@ colorama==0.4.4
 PyYAML==5.4.1
 tradingview-ta==3.2.4
 PTable==0.9.2
+panda
+pandas_ta
+helpers
+aiohttp
+asyncio
+ccxt
+requests
+tradingview_ta

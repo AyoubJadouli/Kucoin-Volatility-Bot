@@ -1,3 +1,13 @@
+# Strategy Settings
+LIMIT = 6
+INTERVAL = '4hour'
+profit_min = 1.2
+profit_max = 100  # only required if you want to limit max profit
+percent_below = 0.4  # change risk level:  0.7 = 70% below high_price, 0.5 = 50% below high_price
+sleepunit = 15
+all_info = True
+
+# Display Setttings
 """
 The Snail v 1.2
 "Buy the dips! ... then wait"
@@ -49,7 +59,7 @@ import json
 from datetime import datetime, timedelta
 from kucoin.client import Client
 from helpers.parameters import parse_args, load_config
-
+from pprint import pprint as pp
 # Load creds modules
 from helpers.handle_creds import (
     load_correct_creds
@@ -77,6 +87,8 @@ client = Client(access_key, secret_key, passphrase_key)
 # If True, an updated list of coins will be generated from the site - http://edgesforledges.com/watchlists/binance.
 # If False, then the list you create in TICKERS_LIST = 'tickers.txt' will be used.
 CREATE_TICKER_LIST = False
+def MyLog(msg):
+    print(f'{TextColors.TURQUOISE}=================>  '+str(msg)+f'  <========================{TextColors.DEFAULT}')
 
 # When creating a ticker list from the source site:
 # http://edgesforledges.com you can use the parameter (all or innovation-zone).
@@ -87,8 +99,6 @@ if CREATE_TICKER_LIST:
 else:
     TICKERS_LIST = 'tickers.txt'
 
-LIMIT = 2
-INTERVAL = '1day'
 
 BVT = False
 OLORIN = True
@@ -97,11 +107,6 @@ if BVT:
 else:
     signal_file_type = '.buy'
 
-profit_min = 3
-profit_max = 100
-# change risk level:  0.7 = 70% below high_price, 0.5 = 50% below high_price
-percent_below = 0.25
-all_info = True
 # not available yet
 # extra_filter = False
 
@@ -140,9 +145,19 @@ def get_price(client_api):
 async def create_urls(ticker_list, interval) -> dict:
     coins_urls = {}
 
-    if INTERVAL == '1day':
+    if (INTERVAL == '1day') or (INTERVAL == '1d'):
         st = datetime.now() - timedelta(days=float(LIMIT))
-    
+    elif INTERVAL == '4hour':
+        st = datetime.now() - timedelta(hours=float(LIMIT*4))    
+    elif INTERVAL == '1hour':
+        st = datetime.now() - timedelta(hours=float(LIMIT))  
+    elif INTERVAL == '1min':
+        st = datetime.now() - timedelta(minutes=float(LIMIT*1))  
+    elif INTERVAL == '5min':
+        st = datetime.now() - timedelta(minutes=float(LIMIT*5))  
+    elif INTERVAL == '15min':
+        st = datetime.now() - timedelta(minutes=float(LIMIT*15))  
+        
     et = datetime.now()
     
     start_time = int(st.timestamp())
@@ -157,7 +172,38 @@ async def create_urls(ticker_list, interval) -> dict:
         else:
             coins_urls[coin] = {'symbol': coin,
                                 'url': f"https://api.kucoin.com/api/v1/market/candles?symbol={coin}&type={interval}&startAt={start_time}&endAt={stop_time}"}
+    return coins_urls
 
+async def create_urls_org(ticker_list, interval) -> dict:
+    coins_urls = {}
+
+    if INTERVAL == '1day':
+        st = datetime.now() - timedelta(days=float(LIMIT))
+    elif INTERVAL == '4hour':
+        st = datetime.now() - timedelta(hours=float(LIMIT/4))    
+    elif INTERVAL == '1hour':
+        st = datetime.now() - timedelta(hours=float(LIMIT))  
+    elif INTERVAL == '1min':
+        st = datetime.now() - timedelta(minuts=float(LIMIT/1))  
+    elif INTERVAL == '3min':
+        st = datetime.now() - timedelta(minuts=float(LIMIT/5))  
+    elif INTERVAL == '15min':
+        st = datetime.now() - timedelta(minuts=float(LIMIT/15))  
+
+    et = datetime.now()
+    
+    start_time = int(st.timestamp())
+    stop_time = int(et.timestamp())
+
+    for coin in ticker_list:
+        if type(coin) == dict:
+            if all(item + PAIR_WITH not in coin['symbol'] for item in EX_PAIRS):
+                coins_urls[coin['symbol']] = {'symbol': coin['symbol'],
+                                              'url': f"https://api.kucoin.com/api/v1/market/candles?symbol"
+                                                     f"{coin['symbol']}&type={interval}&startAt={start_time}&endAt={stop_time}"}
+        else:
+            coins_urls[coin] = {'symbol': coin,
+                                'url': f"https://api.kucoin.com/api/v1/market/candles?symbol={coin}&type={interval}&startAt={start_time}&endAt={stop_time}"}
     return coins_urls
 
 
@@ -189,14 +235,12 @@ async def get_historical_data(ticker_list, interval):
         return response
 
 
-def get_prices_high_low(list_coins, interval):
+def get_prices_high_low2(list_coins, interval):
     if os.name == 'nt':
         # only need this line for Windows based systems
         asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
-    
     prices_low_high = {}
     hist_data = asyncio.run(get_historical_data(ticker_list=list_coins, interval=interval))
-
     for item in hist_data:
         coin_symbol = item['symbol']
         h_p = []
@@ -213,16 +257,47 @@ def get_prices_high_low(list_coins, interval):
             l_p.append(low_price)
         prices_low_high[coin_symbol] = {'symbol': coin_symbol, 'high_price': h_p, 'low_price': l_p,
                                         'current_potential': 0.0}
-
     return prices_low_high
 
+def get_prices_high_low(list_coins, interval):
+    prices_low_high = {}
+    hist_data = asyncio.run(get_historical_data(ticker_list=list_coins, interval=interval))
+    #time.sleep(0.5)
+    for item in hist_data:
+        #time.sleep(0.5)
+        coin_symbol = item['symbol']
+        h_p = []
+        l_p = []
+        try:
+            for i in item['data']['data']:
+                close_time = i[0]
+                open_price = float(i[1])
+                close_price = float(i[2])
+                high_price = float(i[3])
+                low_price = float(i[4])
+                volume = float(i[5])
+                quote_volume = i[6]
+                h_p.append(high_price)
+                l_p.append(low_price)
+        except Exception as e:
+                print(f'Exception {e}')
+                print("=======> Remove this Simbol: "+ str(coin_symbol)+"  <==========")
+                continue
+        prices_low_high[coin_symbol] = {'symbol': coin_symbol, 'high_price': h_p, 'low_price': l_p, 'current_potential': 0.0}
+        #MyLog(prices_low_high)
+    return prices_low_high
 
 def do_work():
     while True:
+        print("+++++++++++++++++++++++   Scoobie_thesnail V1 Working   +++++++++++++++")
+
         try:
 
             init_price = get_price(client)
             coins = get_prices_high_low(init_price, INTERVAL)
+            MyLog("List coins when using get_prices_high_low")
+            pp(coins)
+            MyLog("Try fo while")
             print(f'{TextColors.TURQUOISE}The Snail is checking for potential profit and buy signals{TextColors.DEFAULT}')
             if os.path.exists(f'signals/snail_scan{signal_file_type}'):
                 os.remove(f'signals/snail_scan{signal_file_type}')
@@ -233,11 +308,13 @@ def do_work():
 
             if TEST_MODE:
                 coin_path = 'test_coins_bought.json'
+                MyLog("This is test mode fake money")
             else:
                 if BVT:
                     coin_path = 'coins_bought.json'
                 else:
                     coin_path = 'live_coins_bought.json'
+                    MyLog("This is real money")
 
             if os.path.isfile(coin_path) and os.stat(coin_path).st_size != 0:
                 with open(coin_path) as file:
@@ -277,7 +354,7 @@ def do_work():
                     diapason = high_price - low_price
                     potential = (low_price / high_price) * 100
                     buy_above = low_price * 1.00
-                    buy_below = high_price - (diapason * 0.7)
+                    buy_below = high_price - (diapason * percent_below)
                     current_range = high_price - last_price
 
                     print(f'{TextColors.TURQUOISE}{coin}{TextColors.DEFAULT} Potential profit: {TextColors.TURQUOISE}{current_potential:.0f}%{TextColors.DEFAULT}')
@@ -304,11 +381,15 @@ def do_work():
                         f.write(str(coin + PAIR_WITH) + '\n')
             # else:
             # print(f'{TextColors.TURQUOISE}{coin}{TextColors.DEFAULT} may not be profitable at this time')
-            time.sleep(180)
+            time.sleep(sleepunit)
 
         except Exception as e:
-            print(f'The Snail: Exception do_work() 1: {e}')
-            time.sleep(60)
+            print(f'xxxxxxxxxxxxxxx The Snail: Exception do_work() 1: {e}')
+            time.sleep(sleepunit*4)
             continue
         except KeyboardInterrupt as ki:
+            print(f'xxxxxxxxxxxxxxx The Snail: KeyboardInterrupt do_work() 1: {ki}')
             continue
+        time.sleep(sleepunit)
+        print("+++++++++++++++++++++++   END Snail V1   +++++++++++++++")
+
